@@ -498,7 +498,7 @@ class Game:
             x = (i * 37 + 10) % 650
             y = (i * 53 + 20) % 300
             brightness = int(abs(math.sin(pygame.time.get_ticks() / 1000 + i)) * 150 + 100)
-            pygame.draw.circle(self.screen, (brightness, brightness, brightness + 50),
+            pygame.draw.circle(self.screen, (brightness, brightness, min(255, brightness + 50)),
                              (int(x - self.camera_x), y), 2)
 
     def draw_world(self):
