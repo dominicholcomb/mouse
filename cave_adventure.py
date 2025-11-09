@@ -16,6 +16,7 @@ Player 1 (Rich Mouse - Gold):
 Player 2 (Poor Mouse - Gray):
   - Arrow Keys: Move and jump
   - Right Shift: Bite (when near other mouse)
+  - Left Shift: Open/Close Catalog (to buy cute clothes!)
 
 ESC: Quit
 R: Reset game
@@ -79,6 +80,15 @@ class Mouse:
         self.is_biting = False
         self.bite_timer = 0
         self.bite_cooldown = 0
+
+        # Wardrobe/Inventory
+        self.wardrobe = {
+            'hat': None,
+            'scarf': None,
+            'bow': None,
+            'glasses': None,
+            'dress': None
+        }
 
         # Animation
         self.bounce_offset = 0
@@ -332,6 +342,96 @@ class Mouse:
             # Jewels on crown
             pygame.draw.circle(screen, RED, (draw_x, crown_y - 8), 2)
 
+        # Draw wardrobe items
+        self._draw_wardrobe(screen, draw_x, draw_y)
+
+    def _draw_wardrobe(self, screen, draw_x, draw_y):
+        """Draw equipped wardrobe items on the mouse"""
+        # Draw dress (drawn behind the body, so would need to be done earlier, but we'll put it here for now)
+        if self.wardrobe['dress']:
+            dress_color = self.wardrobe['dress']['color']
+            # Dress body
+            dress_rect = pygame.Rect(draw_x - 20, draw_y - 25, 40, 30)
+            pygame.draw.ellipse(screen, dress_color, dress_rect)
+            pygame.draw.ellipse(screen, BLACK, dress_rect, 2)
+            # Dress ruffles
+            for i in range(3):
+                ruffle_y = draw_y - 20 + i * 8
+                pygame.draw.arc(screen, tuple(max(0, c - 30) for c in dress_color),
+                              (draw_x - 18, ruffle_y, 36, 10), 0, math.pi, 2)
+
+        # Draw scarf
+        if self.wardrobe['scarf']:
+            scarf_color = self.wardrobe['scarf']['color']
+            # Scarf around neck
+            scarf_y = draw_y - 20
+            pygame.draw.ellipse(screen, scarf_color,
+                              (draw_x - 18, scarf_y - 4, 36, 12))
+            pygame.draw.ellipse(screen, BLACK,
+                              (draw_x - 18, scarf_y - 4, 36, 12), 2)
+            # Scarf tails
+            tail_x = draw_x - 15
+            tail_points = [
+                (tail_x, scarf_y),
+                (tail_x - 5, scarf_y + 15),
+                (tail_x - 3, scarf_y + 20)
+            ]
+            pygame.draw.polygon(screen, scarf_color, tail_points)
+            pygame.draw.polygon(screen, BLACK, tail_points, 1)
+
+        # Draw hat
+        if self.wardrobe['hat']:
+            hat_color = self.wardrobe['hat']['color']
+            hat_y = draw_y - self.height - 15
+            # Hat brim
+            brim_rect = pygame.Rect(draw_x - 18, hat_y, 36, 8)
+            pygame.draw.ellipse(screen, hat_color, brim_rect)
+            pygame.draw.ellipse(screen, BLACK, brim_rect, 2)
+            # Hat top
+            hat_top_rect = pygame.Rect(draw_x - 12, hat_y - 15, 24, 15)
+            pygame.draw.rect(screen, hat_color, hat_top_rect, border_radius=5)
+            pygame.draw.rect(screen, BLACK, hat_top_rect, 2, border_radius=5)
+            # Flower on hat
+            pygame.draw.circle(screen, (255, 20, 147), (draw_x + 8, hat_y - 8), 4)
+            pygame.draw.circle(screen, YELLOW, (draw_x + 8, hat_y - 8), 2)
+
+        # Draw bow
+        if self.wardrobe['bow']:
+            bow_color = self.wardrobe['bow']['color']
+            bow_y = draw_y - self.height - 5
+            # Left bow wing
+            left_bow = [
+                (draw_x - 5, bow_y),
+                (draw_x - 15, bow_y - 5),
+                (draw_x - 15, bow_y + 5)
+            ]
+            pygame.draw.polygon(screen, bow_color, left_bow)
+            pygame.draw.polygon(screen, BLACK, left_bow, 1)
+            # Right bow wing
+            right_bow = [
+                (draw_x + 5, bow_y),
+                (draw_x + 15, bow_y - 5),
+                (draw_x + 15, bow_y + 5)
+            ]
+            pygame.draw.polygon(screen, bow_color, right_bow)
+            pygame.draw.polygon(screen, BLACK, right_bow, 1)
+            # Bow center
+            pygame.draw.circle(screen, bow_color, (draw_x, bow_y), 4)
+            pygame.draw.circle(screen, BLACK, (draw_x, bow_y), 4, 1)
+
+        # Draw glasses
+        if self.wardrobe['glasses']:
+            glasses_color = self.wardrobe['glasses']['color']
+            glasses_y = draw_y - self.height + 10
+            # Left lens
+            pygame.draw.circle(screen, (*WHITE, 150), (draw_x - 8, glasses_y), 6)
+            pygame.draw.circle(screen, glasses_color, (draw_x - 8, glasses_y), 6, 2)
+            # Right lens
+            pygame.draw.circle(screen, (*WHITE, 150), (draw_x + 8, glasses_y), 6)
+            pygame.draw.circle(screen, glasses_color, (draw_x + 8, glasses_y), 6, 2)
+            # Bridge
+            pygame.draw.line(screen, glasses_color, (draw_x - 2, glasses_y), (draw_x + 2, glasses_y), 2)
+
 
 class Coin:
     def __init__(self, x, y, value=10):
@@ -362,6 +462,210 @@ class Coin:
             self.collected = True
             return True
         return False
+
+
+class Catalog:
+    """Shop catalog for buying cute clothes"""
+    def __init__(self):
+        self.items = {
+            'hat_pink': {
+                'name': 'Pink Sun Hat',
+                'type': 'hat',
+                'price': 50,
+                'color': (255, 182, 193),
+                'description': 'A lovely pink hat with a flower!'
+            },
+            'hat_purple': {
+                'name': 'Purple Party Hat',
+                'type': 'hat',
+                'price': 60,
+                'color': PURPLE,
+                'description': 'Perfect for celebrations!'
+            },
+            'scarf_red': {
+                'name': 'Red Scarf',
+                'type': 'scarf',
+                'price': 40,
+                'color': RED,
+                'description': 'Cozy and stylish!'
+            },
+            'scarf_blue': {
+                'name': 'Blue Scarf',
+                'type': 'scarf',
+                'price': 40,
+                'color': BLUE,
+                'description': 'Keep warm in style!'
+            },
+            'bow_pink': {
+                'name': 'Pink Bow',
+                'type': 'bow',
+                'price': 30,
+                'color': (255, 105, 180),
+                'description': 'Super cute bow tie!'
+            },
+            'bow_yellow': {
+                'name': 'Yellow Bow',
+                'type': 'bow',
+                'price': 30,
+                'color': YELLOW,
+                'description': 'Bright and cheerful!'
+            },
+            'glasses_black': {
+                'name': 'Cool Sunglasses',
+                'type': 'glasses',
+                'price': 70,
+                'color': BLACK,
+                'description': 'Look super cool!'
+            },
+            'glasses_gold': {
+                'name': 'Gold Glasses',
+                'type': 'glasses',
+                'price': 100,
+                'color': GOLD,
+                'description': 'Fancy and fashionable!'
+            },
+            'dress_pink': {
+                'name': 'Pink Princess Dress',
+                'type': 'dress',
+                'price': 150,
+                'color': (255, 192, 203),
+                'description': 'Feel like royalty!'
+            },
+            'dress_purple': {
+                'name': 'Purple Ball Gown',
+                'type': 'dress',
+                'price': 180,
+                'color': (186, 85, 211),
+                'description': 'Elegant and beautiful!'
+            }
+        }
+
+        self.is_open = False
+        self.selected_index = 0
+        self.scroll_offset = 0
+
+    def toggle(self):
+        """Toggle catalog open/closed"""
+        self.is_open = not self.is_open
+
+    def navigate(self, direction):
+        """Navigate through catalog items"""
+        items_list = list(self.items.keys())
+        self.selected_index = (self.selected_index + direction) % len(items_list)
+
+    def get_selected_item(self):
+        """Get currently selected item"""
+        items_list = list(self.items.keys())
+        if items_list:
+            return items_list[self.selected_index], self.items[items_list[self.selected_index]]
+        return None, None
+
+    def purchase_item(self, mouse):
+        """Try to purchase the selected item"""
+        item_id, item = self.get_selected_item()
+        if not item:
+            return False, "No item selected"
+
+        if mouse.money < item['price']:
+            return False, "Not enough money!"
+
+        # Check if already owns this type
+        if mouse.wardrobe[item['type']]:
+            return False, f"Already wearing a {item['type']}!"
+
+        # Purchase successful
+        mouse.money -= item['price']
+        mouse.wardrobe[item['type']] = item
+        return True, f"Purchased {item['name']}!"
+
+    def remove_item(self, mouse, item_type):
+        """Remove an equipped item"""
+        if mouse.wardrobe[item_type]:
+            mouse.wardrobe[item_type] = None
+            return True
+        return False
+
+    def draw(self, screen):
+        """Draw the catalog UI"""
+        if not self.is_open:
+            return
+
+        # Semi-transparent background
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        pygame.draw.rect(overlay, (*BLACK, 180), overlay.get_rect())
+        screen.blit(overlay, (0, 0))
+
+        # Catalog window
+        catalog_width = 600
+        catalog_height = 500
+        catalog_x = (SCREEN_WIDTH - catalog_width) // 2
+        catalog_y = (SCREEN_HEIGHT - catalog_height) // 2
+
+        # Window background
+        pygame.draw.rect(screen, (255, 250, 240),
+                        (catalog_x, catalog_y, catalog_width, catalog_height),
+                        border_radius=15)
+        pygame.draw.rect(screen, GOLD,
+                        (catalog_x, catalog_y, catalog_width, catalog_height),
+                        5, border_radius=15)
+
+        # Title
+        title_font = pygame.font.Font(None, 48)
+        title = title_font.render("Cute Clothes Catalog", True, PURPLE)
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, catalog_y + 40))
+        screen.blit(title, title_rect)
+
+        # Instructions
+        inst_font = pygame.font.Font(None, 24)
+        instructions = [
+            "UP/DOWN: Browse | ENTER: Buy | BACKSPACE: Remove",
+            "ESC or LEFT SHIFT: Close"
+        ]
+        for i, inst in enumerate(instructions):
+            inst_text = inst_font.render(inst, True, DARK_GRAY)
+            inst_rect = inst_text.get_rect(center=(SCREEN_WIDTH // 2, catalog_y + 80 + i * 25))
+            screen.blit(inst_text, inst_rect)
+
+        # Items list
+        item_font = pygame.font.Font(None, 28)
+        items_list = list(self.items.items())
+
+        start_y = catalog_y + 140
+        item_height = 60
+        visible_items = 5
+
+        for i in range(visible_items):
+            idx = i + self.scroll_offset
+            if idx >= len(items_list):
+                break
+
+            item_id, item = items_list[idx]
+            y_pos = start_y + i * item_height
+
+            # Highlight selected item
+            if idx == self.selected_index:
+                highlight_rect = pygame.Rect(catalog_x + 20, y_pos - 5,
+                                            catalog_width - 40, item_height - 10)
+                pygame.draw.rect(screen, (255, 255, 200), highlight_rect, border_radius=8)
+                pygame.draw.rect(screen, GOLD, highlight_rect, 3, border_radius=8)
+
+            # Item color swatch
+            pygame.draw.circle(screen, item['color'],
+                             (catalog_x + 50, y_pos + 20), 15)
+            pygame.draw.circle(screen, BLACK,
+                             (catalog_x + 50, y_pos + 20), 15, 2)
+
+            # Item name and price
+            name_text = item_font.render(item['name'], True, BLACK)
+            screen.blit(name_text, (catalog_x + 80, y_pos + 5))
+
+            price_text = item_font.render(f"${item['price']}", True, DARK_GOLD)
+            screen.blit(price_text, (catalog_x + 400, y_pos + 5))
+
+            # Description
+            desc_font = pygame.font.Font(None, 20)
+            desc_text = desc_font.render(item['description'], True, DARK_GRAY)
+            screen.blit(desc_text, (catalog_x + 80, y_pos + 30))
 
 
 class Game:
@@ -399,6 +703,11 @@ class Game:
         self.hazards = []
         self.coins = []
         self.build_world()
+
+        # Catalog/Shop
+        self.catalog = Catalog()
+        self.message = ""
+        self.message_timer = 0
 
     def build_world(self):
         """Build the game world with cave and mansion"""
@@ -636,7 +945,7 @@ class Game:
         self.screen.blit(controls_bg, (10, SCREEN_HEIGHT - 80))
 
         p1_controls = self.font.render("P1: WASD-move | W-jump | Q-bite", True, GOLD)
-        p2_controls = self.font.render("P2: Arrows-move | UP-jump | RShift-bite", True, GRAY)
+        p2_controls = self.font.render("P2: Arrows-move | UP-jump | RShift-bite | LShift-Shop", True, GRAY)
         reset_text = self.font.render("R-Reset | ESC-Quit", True, WHITE)
 
         self.screen.blit(p1_controls, (20, SCREEN_HEIGHT - 70))
@@ -652,15 +961,42 @@ class Game:
                     self.running = False
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        self.running = False
+                        if self.catalog.is_open:
+                            self.catalog.toggle()
+                        else:
+                            self.running = False
                     elif event.key == pygame.K_r:
                         self.reset_game()
+                    # Catalog controls
+                    elif event.key == pygame.K_LSHIFT:
+                        self.catalog.toggle()
+                    elif self.catalog.is_open:
+                        if event.key == pygame.K_UP:
+                            self.catalog.navigate(-1)
+                        elif event.key == pygame.K_DOWN:
+                            self.catalog.navigate(1)
+                        elif event.key == pygame.K_RETURN:
+                            success, msg = self.catalog.purchase_item(self.poor_mouse)
+                            self.message = msg
+                            self.message_timer = 120
+                        elif event.key == pygame.K_BACKSPACE:
+                            # Remove item - show submenu or cycle through types
+                            item_id, item = self.catalog.get_selected_item()
+                            if item:
+                                if self.catalog.remove_item(self.poor_mouse, item['type']):
+                                    self.message = f"Removed {item['type']}!"
+                                    self.message_timer = 120
 
             # Get pressed keys
             keys = pygame.key.get_pressed()
 
             # Update
-            self.update(keys)
+            if not self.catalog.is_open:
+                self.update(keys)
+
+            # Update message timer
+            if self.message_timer > 0:
+                self.message_timer -= 1
 
             # Draw
             self.draw_background()
@@ -677,6 +1013,20 @@ class Game:
 
             # Draw UI
             self.draw_ui()
+
+            # Draw catalog
+            self.catalog.draw(self.screen)
+
+            # Draw message
+            if self.message_timer > 0:
+                message_font = pygame.font.Font(None, 36)
+                message_bg = pygame.Surface((len(self.message) * 20 + 40, 60), pygame.SRCALPHA)
+                pygame.draw.rect(message_bg, (*BLACK, 200), message_bg.get_rect(), border_radius=10)
+                self.screen.blit(message_bg, (SCREEN_WIDTH // 2 - message_bg.get_width() // 2, 150))
+
+                message_text = message_font.render(self.message, True, WHITE)
+                message_rect = message_text.get_rect(center=(SCREEN_WIDTH // 2, 180))
+                self.screen.blit(message_text, message_rect)
 
             # Update display
             pygame.display.flip()
